@@ -1,0 +1,13 @@
+name: ServLogger
+prefix: ServLogger
+version: ${version}
+main: dev.elysium.servlogger.ServLogger
+description: Плагин какой-то
+website: 'https://github.com/FreedomDevs/ServLogger'
+api-version: '1.21.10'
+authors:
+  - mikinol
+
+libraries:
+  - org.jetbrains.kotlin:kotlin-stdlib:2.2.21
+  - org.xerial:sqlite-jdbc:3.51.0.0
