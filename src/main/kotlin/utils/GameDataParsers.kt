@@ -5,6 +5,7 @@ import com.google.gson.reflect.TypeToken
 import dev.elysium.servlogger.database.ServLoggerDatabase
 import dev.elysium.servlogger.database.actions.BlockInformation
 import dev.elysium.servlogger.database.actions.ContainerDataRow
+import io.papermc.paper.block.TileStateInventoryHolder
 import org.bukkit.Bukkit
 import org.bukkit.Material
 import org.bukkit.block.BlockState
@@ -28,12 +29,9 @@ object GameDataParsers {
         var blockTileState: ByteArray? = null
         var blockContainerData = listOf<ContainerDataRow>()
         if (block is TileState) {
-            // 123
+            blockTileState = TileStateSerializer.serializeTileState(database, block)
 
-            if (!block.persistentDataContainer.isEmpty)
-                blockTileState = block.persistentDataContainer.serializeToBytes()
-
-            if (block is Container)
+            if (block is TileStateInventoryHolder)
                 blockContainerData = parseContainerData(database, block)
         }
 
@@ -60,7 +58,7 @@ object GameDataParsers {
         return Pair(blockId, blockDataId)
     }
 
-    fun parseContainerData(database: ServLoggerDatabase, container: Container): List<ContainerDataRow> {
+    fun parseContainerData(database: ServLoggerDatabase, container: TileStateInventoryHolder): List<ContainerDataRow> {
         val result = mutableListOf<ContainerDataRow>()
 
         for ((slotIndex, item) in container.inventory.withIndex()) {

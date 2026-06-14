@@ -5,7 +5,8 @@ import dev.elysium.servlogger.database.ServLoggerDatabase
 
 object RegisterDefaultHandlers {
     val defaultHandlers: List<LogHandler> = listOf(
-        BlockPlacementHandler
+        BlockPlacementHandler,
+        BlockBreakHandler,
     )
 
     fun registerDefaultHandlers(database: ServLoggerDatabase) {

@@ -6,7 +6,8 @@ import org.bukkit.event.Listener
 
 object RegisterDefaultListeners {
     val defaultListeners: List<Listener> = listOf(
-        BlocksListener()
+        BlockPlaceListener,
+        BlockBreakListener,
     )
 
     fun registerDefaultListeners(plugin: ServLogger) {

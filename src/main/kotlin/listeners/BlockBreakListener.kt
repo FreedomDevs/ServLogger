@@ -2,16 +2,13 @@ package dev.elysium.servlogger.listeners
 
 import dev.elysium.servlogger.ServLogger
 import dev.elysium.servlogger.database.actions.BlockPlacement
-import dev.elysium.servlogger.database.actions.ContainerDataRow
 import dev.elysium.servlogger.utils.GameDataParsers
-import org.bukkit.block.Container
-import org.bukkit.block.TileState
 import org.bukkit.event.EventHandler
 import org.bukkit.event.EventPriority
 import org.bukkit.event.Listener
 import org.bukkit.event.block.BlockPlaceEvent
 
-class BlocksListener : Listener {
+object BlockBreakListener : Listener {
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     fun onBlockPlace(event: BlockPlaceEvent) {
         val userId = ServLogger.instance.database.users.getOrCreateUser(event.player.uniqueId, event.player.name)

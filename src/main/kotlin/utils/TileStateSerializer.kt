@@ -1,15 +1,18 @@
 package dev.elysium.servlogger.utils
 
+import dev.elysium.servlogger.database.ServLoggerDatabase
+import io.papermc.paper.command.CommandBlockHolder
 import io.papermc.paper.registry.RegistryAccess
 import io.papermc.paper.registry.RegistryKey
 import net.kyori.adventure.text.Component
 import net.kyori.adventure.text.serializer.gson.GsonComponentSerializer
-import org.bukkit.Bukkit
 import org.bukkit.Nameable
-import org.bukkit.Registry
 import org.bukkit.block.Banner
 import org.bukkit.block.Beehive
 import org.bukkit.block.Campfire
+import org.bukkit.block.EndGateway
+import org.bukkit.block.Lectern
+import org.bukkit.block.ShulkerBox
 import org.bukkit.block.TileState
 import org.bukkit.material.Colorable
 import java.io.ByteArrayOutputStream
@@ -27,7 +30,7 @@ object TileStateSerializer {
     }
 
     @Suppress("UnstableApiUsage")
-    fun serializeTileState(state: TileState) {
+    fun serializeTileState(database: ServLoggerDatabase, state: TileState): ByteArray? {
         val bos = ByteArrayOutputStream()
         val dos = DataOutputStream(bos)
 
@@ -46,7 +49,12 @@ object TileStateSerializer {
             bannerDos.writeByte(state.numberOfPatterns())
             for (pattern in state.patterns) {
                 bannerDos.writeByte(pattern.color.woolData.toInt())
-                val key = RegistryAccess.registryAccess().getRegistry(RegistryKey.BANNER_PATTERN).getKey(pattern.pattern).toString()
+                var key =
+                    RegistryAccess.registryAccess().getRegistry(RegistryKey.BANNER_PATTERN).getKey(pattern.pattern)
+                        .toString()
+                if (key.startsWith("minecraft:"))
+                    key = key.substring(10)
+
                 bannerDos.writeByte(key.length)
                 bannerDos.write(key.toByteArray(Charsets.UTF_8))
             }
@@ -59,14 +67,19 @@ object TileStateSerializer {
                 writeMyTLV(dos, 0x02, byteArrayOf(state.color!!.woolData))
         }
 
+        if (state is ShulkerBox) {
+            if (state.color != null)
+                writeMyTLV(dos, 0x02, byteArrayOf(state.color!!.woolData))
+        }
+
         if (state is Beehive) {
             if (state.entityCount > 0)
                 writeMyTLV(dos, 0x03, byteArrayOf(state.entityCount.toByte()))
         }
 
         if (state is Campfire) {
-            val campfireStream = java.io.ByteArrayOutputStream()
-            val campfireDos = java.io.DataOutputStream(campfireStream)
+            val campfireStream = ByteArrayOutputStream()
+            val campfireDos = DataOutputStream(campfireStream)
             for (slot in 0 until 4) {
                 val item = state.getItem(slot)
 
@@ -83,11 +96,61 @@ object TileStateSerializer {
                     campfireDos.writeBoolean(false)
                 }
             }
+
+            writeMyTLV(dos, 0x04, campfireStream.toByteArray())
         }
 
-        // Skip:
-        // Furnace
-        // BrewingStand
-        // BrushableBlock
+        if (state is CommandBlockHolder) {
+            if (!state.command.isEmpty())
+                writeMyTLV(dos, 0x05, state.command.toByteArray(Charsets.UTF_8))
+        }
+
+        if (state is EndGateway) {
+            val endGatewayStream = ByteArrayOutputStream()
+            val endGatewayDos = DataOutputStream(endGatewayStream)
+
+            endGatewayDos.writeLong(state.age)
+            endGatewayDos.writeBoolean(state.isExactTeleport)
+
+            if (state.exitLocation != null) {
+                endGatewayDos.writeInt(state.exitLocation!!.blockX)
+                endGatewayDos.writeInt(state.exitLocation!!.blockY)
+                endGatewayDos.writeInt(state.exitLocation!!.blockZ)
+                endGatewayDos.writeInt(state.exitLocation!!.blockZ)
+                endGatewayDos.writeLong(database.worlds.getOrCreateByIdentifier(state.exitLocation!!.world.name))
+            }
+
+            writeMyTLV(dos, 0x06, endGatewayStream.toByteArray())
+        }
+
+        if (state is Lectern) {
+            if (state.page > 1) {
+                val lecternStream = ByteArrayOutputStream()
+                val lecternDos = DataOutputStream(lecternStream)
+                lecternDos.writeInt(state.page)
+                writeMyTLV(dos, 0x07, lecternStream.toByteArray())
+            }
+        }
+
+        // PersistentDataHolder
+        val bytes = state.persistentDataContainer.serializeToBytes()
+        if (!bytes.contentEquals(byteArrayOf(0x0A, 0x00, 0x00, 0x00))) {
+            writeMyTLV(dos, 0x08, bytes)
+        }
+
+
+        // TODO Crafter
+        // TODO CreatureSpawner
+        // TODO TrialSpawner
+        // TODO Sign
+        // TODO Skull
+        // TODO Structure
+        // TODO Vault
+        // TODO Furnace
+        // TODO BrewingStand
+        // TODO BrushableBlock
+
+        if (bos.size() == 0) return null
+        return bos.toByteArray()
     }
 }

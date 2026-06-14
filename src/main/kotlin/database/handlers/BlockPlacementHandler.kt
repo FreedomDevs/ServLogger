@@ -66,7 +66,7 @@ object BlockPlacementHandler : LogHandler {
                 stmt.addBatch()
             }
 
-            ServLogger.debugLog("Executing $stmt)")
+            ServLogger.debugLog("Executing block placement: $stmt")
             stmt.executeBatch()
         }
     }
