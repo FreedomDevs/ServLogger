@@ -8,7 +8,7 @@ class WorldsRepository (val database: ServLoggerDatabase){
     }
 
     fun getIdByIdentifier(identifier: String): Long? {
-        database.connection.prepareStatement(getIdByIdentifierSql).use { stmt ->
+        database.getSqliteConnection()!!.prepareStatement(getIdByIdentifierSql).use { stmt ->
             stmt.setString(1, identifier)
             stmt.executeQuery().use { resultSet ->
                 if (resultSet.next()) {
@@ -20,7 +20,7 @@ class WorldsRepository (val database: ServLoggerDatabase){
     }
 
     fun createByIdentifier(identifier: String): Long {
-        database.connection.prepareStatement(createByIdentifierSql).use { stmt ->
+        database.getSqliteConnection()!!.prepareStatement(createByIdentifierSql).use { stmt ->
             stmt.setString(1, identifier)
             stmt.executeUpdate()
 
@@ -40,7 +40,7 @@ class WorldsRepository (val database: ServLoggerDatabase){
     }
 
     fun getIdentifierById(id: Long): String? {
-        database.connection.prepareStatement(getIdentifierByIdSql).use { stmt ->
+        database.getSqliteConnection()!!.prepareStatement(getIdentifierByIdSql).use { stmt ->
             stmt.setLong(1, id)
             stmt.executeQuery().use { resultSet ->
                 if (resultSet.next()) {

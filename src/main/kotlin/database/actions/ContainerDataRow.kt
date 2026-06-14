@@ -1,3 +1,4 @@
-package dev.elysium.servlogger.database.datatypes
+package dev.elysium.servlogger.database.actions
 
+@Suppress("ArrayInDataClass")
 data class ContainerDataRow (val itemId: Long, val amount: Int, val slot: Int, val itemNBT: ByteArray?)

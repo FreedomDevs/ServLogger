@@ -8,7 +8,7 @@ class BlockDataRepository (val database: ServLoggerDatabase){
     }
 
     fun getIdByBlockData(blockData: String): Long? {
-        database.connection.prepareStatement(getIdByBlockDataSql).use { stmt ->
+        database.getSqliteConnection()!!.prepareStatement(getIdByBlockDataSql).use { stmt ->
             stmt.setString(1, blockData)
             stmt.executeQuery().use { resultSet ->
                 if (resultSet.next()) {
@@ -20,7 +20,7 @@ class BlockDataRepository (val database: ServLoggerDatabase){
     }
 
     fun createByBlockData(blockData: String): Long {
-        database.connection.prepareStatement(createByBlockDataSql).use { stmt ->
+        database.getSqliteConnection()!!.prepareStatement(createByBlockDataSql).use { stmt ->
             stmt.setString(1, blockData)
             stmt.executeUpdate()
 
@@ -40,7 +40,7 @@ class BlockDataRepository (val database: ServLoggerDatabase){
     }
 
     fun getBlockDataById(id: Long): String? {
-        database.connection.prepareStatement(getBlockDataByIdSql).use { stmt ->
+        database.getSqliteConnection()!!.prepareStatement(getBlockDataByIdSql).use { stmt ->
             stmt.setLong(1, id)
             stmt.executeQuery().use { resultSet ->
                 if (resultSet.next()) {

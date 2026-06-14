@@ -1,39 +1,53 @@
 package dev.elysium.servlogger.database
 
 import dev.elysium.servlogger.ServLogger
+import org.bukkit.Bukkit
 import java.sql.Connection
 import java.sql.DriverManager
 import java.sql.SQLException
 
 
 class ServLoggerDatabase {
-    lateinit var connection: Connection
+    val databaseType = DatabaseTypes.SQLITE
+    private lateinit var connection: Connection
     val worlds = WorldsRepository(this)
     val types = TypesRepository(this)
     val users = UsersRepository(this)
     val blockData = BlockDataRepository(this)
+    val containerItemsData = ContainerItemsDataRepository(this)
+
+    val logQueue = DatabaseQueue(this)
+
+    @Suppress("RedundantNullableReturnType")
+    fun getSqliteConnection(): Connection? {
+        return connection
+    }
+
+    @UnsafeDatabaseApi
+    fun getAnyConnection(): Connection {
+        return connection
+    }
 
     fun checkLastMigration(): Int {
         connection.createStatement().use { stmt ->
             stmt.executeUpdate(
                 """
                 CREATE TABLE IF NOT EXISTS migrations (
-                    last_migration_id INTEGER NOT NULL,
-                    applied_at INTEGER NOT NULL
+                    last_migration_id INTEGER NOT NULL
                 );
             """.trimIndent()
             )
         }
 
         connection.createStatement().use { statement ->
-            statement.executeQuery("SELECT version FROM schema_version LIMIT 1;").use { resultSet ->
+            statement.executeQuery("SELECT last_migration_id FROM migrations LIMIT 1;").use { resultSet ->
                 if (resultSet.next()) {
                     return resultSet.getInt("last_migration_id")
                 }
             }
         }
 
-        val insertSql = "INSERT INTO migrations (version) VALUES (0);"
+        val insertSql = "INSERT INTO migrations (last_migration_id) VALUES (0);"
         connection.createStatement().use { statement ->
             statement.execute(insertSql)
         }
@@ -43,7 +57,7 @@ class ServLoggerDatabase {
 
     fun updateMigrationVersion(version: Int) {
         val deleteSql = "DELETE FROM migrations;"
-        val insertSql = "INSERT INTO migrations (version) VALUES (?);"
+        val insertSql = "INSERT INTO migrations (last_migration_id) VALUES (?);"
 
         try {
             connection.autoCommit = false
@@ -70,12 +84,36 @@ class ServLoggerDatabase {
         val lastMigrationId = checkLastMigration()
         val lastExistingMigrationId = 1
 
-        for (i in lastMigrationId + 1..lastExistingMigrationId) {
-            val sqlScript = readMigrationScript(i)
+        connection.autoCommit = false
 
-            connection.createStatement().use { statement ->
-                statement.execute(sqlScript)
+        try {
+            for (i in lastMigrationId + 1..lastExistingMigrationId) {
+                ServLogger.logger.info("Applying migration $i")
+                val sqlScript = readMigrationScript(i)
+
+                connection.createStatement().use { statement ->
+                    val rawStatements = sqlScript.split(";")
+
+                    for (rawSql in rawStatements) {
+                        val trimmedSql = rawSql.trim()
+                        if (trimmedSql.isNotEmpty()) {
+                            ServLogger.debugLog("Executing: $trimmedSql")
+                            statement.addBatch(trimmedSql)
+                        }
+                    }
+
+                    statement.executeBatch()
+                }
             }
+            connection.commit()
+        } catch (e: Exception) {
+            connection.rollback()
+            connection.close()
+            ServLogger.logger.info("Couldn't apply migrations")
+            e.printStackTrace()
+            Bukkit.getPluginManager().disablePlugin(ServLogger.instance)
+        } finally {
+            connection.autoCommit = true
         }
 
         updateMigrationVersion(lastExistingMigrationId)
@@ -106,11 +144,9 @@ class ServLoggerDatabase {
         private fun readMigrationScript(version: Int): String {
             val path = "migrations/migration_$version.sql"
 
-            // Получаем входной поток файла из ресурсов
             val inputStream = object {}.javaClass.classLoader.getResourceAsStream(path)
-                ?: throw IllegalArgumentException("Файл миграции не найден в ресурсах: $path")
+                ?: throw IllegalArgumentException("Migration file not found in resources: $path")
 
-            // Читаем поток в строку
             return inputStream.bufferedReader(Charsets.UTF_8).use { it.readText() }
         }
     }

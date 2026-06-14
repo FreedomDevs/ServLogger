@@ -9,6 +9,7 @@ CREATE TABLE types
     id         INTEGER PRIMARY KEY AUTOINCREMENT,
     identifier TEXT NOT NULL UNIQUE
 );
+INSERT INTO types (id, identifier) VALUES (0, 'minecraft:air');
 
 CREATE TABLE blocks_data
 (
@@ -19,7 +20,7 @@ CREATE TABLE blocks_data
 CREATE TABLE users
 (
     id       INTEGER PRIMARY KEY AUTOINCREMENT,
-    uniqueId TEXT PRIMARY KEY UNIQUE,
+    uniqueId TEXT NOT NULL UNIQUE,
     nickname TEXT NOT NULL
 );
 
@@ -27,6 +28,7 @@ CREATE TABLE block_placements
 (
     id                         INTEGER PRIMARY KEY AUTOINCREMENT,
     userId                     INTEGER NOT NULL,
+    timestamp                  INTEGER NOT NULL,
     x                          INTEGER NOT NULL,
     y                          INTEGER NOT NULL,
     z                          INTEGER NOT NULL,
@@ -46,7 +48,7 @@ CREATE TABLE block_placements
     FOREIGN KEY (placedBlockDataId) REFERENCES blocks_data (id),
     FOREIGN KEY (replacedBlockId) REFERENCES types (id),
     FOREIGN KEY (replacedBlockDataId) REFERENCES blocks_data (id)
-)
+);
 
 CREATE TABLE containers_items_data
 (
@@ -55,4 +57,4 @@ CREATE TABLE containers_items_data
     amount  INTEGER NOT NULL,
     slot    INTEGER NOT NULL,
     itemNBT BLOB
-)
+);

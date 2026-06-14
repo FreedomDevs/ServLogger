@@ -4,7 +4,7 @@ plugins {
     java
     `maven-publish`
     kotlin("jvm") version "2.4.0"
-    id("xyz.jpenilla.run-paper") version "2.3.1"
+    id("xyz.jpenilla.run-paper") version "3.0.2"
 }
 
 group = "dev.elysium.servlogger"
@@ -37,32 +37,20 @@ tasks {
     runServer {
         minecraftVersion("1.21.10")
 
+        val pluginsDirFile = layout.projectDirectory.dir("run/plugins").asFile
         doFirst {
-            val pluginsDir = file("run/plugins")
-            pluginsDir.mkdirs()
-
-            val viaVersionJar = pluginsDir.resolve("ViaVersion-5.5.1.jar")
-            if (!viaVersionJar.exists()) {
-                println("Скачиваем ViaVersion...")
-                URI("https://hangarcdn.papermc.io/plugins/ViaVersion/ViaVersion/versions/5.6.0/PAPER/ViaVersion-5.6.0.jar").toURL()
-                    .openStream().use { input ->
-                        viaVersionJar.outputStream().use { output ->
-                            input.copyTo(output)
-                        }
-                    }
-                println("ViaVersion скачан в run/plugins")
+            if (!pluginsDirFile.exists()) {
+                pluginsDirFile.mkdirs()
             }
 
-            val placeholderAPI = pluginsDir.resolve("PlaceholderAPI-2.11.7.jar")
-            if (!placeholderAPI.exists()) {
-                println("Скачиваем PlaceholderAPI...")
-                URI("https://cdn.modrinth.com/data/lKEzGugV/versions/sn9LYZkM/PlaceholderAPI-2.11.7.jar").toURL()
-                    .openStream().use { input ->
-                        placeholderAPI.outputStream().use { output ->
-                            input.copyTo(output)
-                        }
+            val viaVersionJar = pluginsDirFile.resolve("ViaVersion-5.6.0.jar")
+            if (!viaVersionJar.exists()) {
+                println("Downloading ViaVersion...")
+                URI("https://hangarcdn.papermc.io/plugins/ViaVersion/ViaVersion/versions/5.6.0/PAPER/ViaVersion-5.6.0.jar")
+                    .toURL().openStream().use { input ->
+                        viaVersionJar.outputStream().use { output -> input.copyTo(output) }
                     }
-                println("PlaceholderAPI скачан в run/plugins")
+                println("ViaVersion downloaded successfully to run/plugins")
             }
         }
     }
